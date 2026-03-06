@@ -15,7 +15,10 @@
 Запуск:
   python fitness_bot.py
 """
-
+python
+import os
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+CHAT_ID   = int(os.environ["CHAT_ID"])
 import logging
 import random
 from datetime import datetime, timedelta
