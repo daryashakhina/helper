@@ -15,9 +15,7 @@
 Запуск:
   python fitness_bot.py
 """
-import os
-BOT_TOKEN = os.environ["BOT_TOKEN"]
-CHAT_ID   = int(os.environ["CHAT_ID"])
+
 import logging
 import random
 from datetime import datetime, timedelta
@@ -28,10 +26,13 @@ from telegram import Bot
 from telegram.ext import Application
 
 # ─────────────────────────────────────────
-#  НАСТРОЙКИ — заполни перед запуском!
+#  НАСТРОЙКИ
+#  Локально: вставь значения напрямую
+#  На Railway: задай через Variables в дашборде
 # ─────────────────────────────────────────
-BOT_TOKEN  = "8710086380:AAEPW8sTeRzfp_hZgYJMR2gwNDATetoTI98"      # от @BotFather
-CHAT_ID    = 234568521                          # твой числовой ID от @userinfobot
+import os
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "ВСТАВЬ_ТОКЕН_СЮДА")
+CHAT_ID   = int(os.environ.get("CHAT_ID", "0"))
 # ─────────────────────────────────────────
 
 CYPRUS_TZ = pytz.timezone("Asia/Nicosia")
