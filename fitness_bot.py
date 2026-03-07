@@ -419,49 +419,34 @@ async def send_evening_reminder(bot: Bot):
     log.info("✅ Отправлено вечернее напоминание")
 
 
+
 # ══════════════════════════════════════════
-#  SYNC WRAPPERS для APScheduler
+#  MAIN — один async loop, один Bot
 # ══════════════════════════════════════════
 
 import asyncio
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-def job_morning_motivation():
-    asyncio.run(send_morning_motivation(bot))
-
-def job_activity_plan():
-    asyncio.run(send_activity_plan(bot))
-
-def job_meal_plan():
-    asyncio.run(send_meal_plan(bot))
-
-def job_evening_reminder():
-    asyncio.run(send_evening_reminder(bot))
-
-
-# ══════════════════════════════════════════
-#  MAIN
-# ══════════════════════════════════════════
-
-if __name__ == "__main__":
+async def main():
     if BOT_TOKEN == "ВСТАВЬ_ТОКЕН_СЮДА" or CHAT_ID == 0:
         print("❌ Заполни BOT_TOKEN и CHAT_ID в начале файла!")
-        exit(1)
+        return
 
-    bot = Bot(token=BOT_TOKEN)
+    # Один экземпляр Bot на весь процесс — один пул соединений
+    from telegram.request import HTTPXRequest
+    request = HTTPXRequest(connection_pool_size=8, pool_timeout=30)
+    bot = Bot(token=BOT_TOKEN, request=request)
 
-    scheduler = BackgroundScheduler(timezone=CYPRUS_TZ)
+    # Проверяем соединение
+    me = await bot.get_me()
+    log.info(f"✅ Бот подключён: @{me.username}")
 
-    # 06:30 — подбадривающее сообщение
-    scheduler.add_job(job_morning_motivation, "cron", hour=6, minute=30)
+    scheduler = AsyncIOScheduler(timezone=CYPRUS_TZ)
 
-    # 07:00 — план активности на сегодня
-    scheduler.add_job(job_activity_plan, "cron", hour=7, minute=0)
-
-    # 16:45 — план питания на завтра
-    scheduler.add_job(job_meal_plan, "cron", hour=16, minute=45)
-
-    # 20:00 — вечернее напоминание
-    scheduler.add_job(job_evening_reminder, "cron", hour=20, minute=0)
+    scheduler.add_job(send_morning_motivation, "cron", hour=6,  minute=30, args=[bot])
+    scheduler.add_job(send_activity_plan,      "cron", hour=7,  minute=0,  args=[bot])
+    scheduler.add_job(send_meal_plan,          "cron", hour=16, minute=45, args=[bot])
+    scheduler.add_job(send_evening_reminder,   "cron", hour=20, minute=0,  args=[bot])
 
     scheduler.start()
 
@@ -472,11 +457,13 @@ if __name__ == "__main__":
     log.info("  20:00 — вечернее напоминание")
     log.info("Нажми Ctrl+C для остановки.")
 
+    # Держим async loop живым
     try:
-        # Держим процесс живым
-        import time
         while True:
-            time.sleep(60)
+            await asyncio.sleep(3600)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
         log.info("Бот остановлен.")
+
+if __name__ == "__main__":
+    asyncio.run(main())
