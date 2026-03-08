@@ -18,21 +18,34 @@
 
 import logging
 import random
-from datetime import datetime, timedelta
+import os
+import sys
+import fcntl
+from datetime import datetime
 
 import pytz
-from apscheduler.schedulers.background import BackgroundScheduler
 from telegram import Bot
-from telegram.ext import Application
 
 # ─────────────────────────────────────────
 #  НАСТРОЙКИ
 #  Локально: вставь значения напрямую
 #  На Railway: задай через Variables в дашборде
 # ─────────────────────────────────────────
-import os
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "ВСТАВЬ_ТОКЕН_СЮДА")
 CHAT_ID   = int(os.environ.get("CHAT_ID", "0"))
+# ─────────────────────────────────────────
+
+# ─────────────────────────────────────────
+#  ЗАЩИТА ОТ ДУБЛИРОВАНИЯ
+#  Если уже запущен один экземпляр — второй сразу завершается
+# ─────────────────────────────────────────
+LOCK_FILE = "/tmp/fitness_bot.lock"
+_lock_fd = open(LOCK_FILE, "w")
+try:
+    fcntl.flock(_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except BlockingIOError:
+    print("⚠️  Бот уже запущен в другом процессе. Завершаю.")
+    sys.exit(0)
 # ─────────────────────────────────────────
 
 CYPRUS_TZ = pytz.timezone("Asia/Nicosia")
